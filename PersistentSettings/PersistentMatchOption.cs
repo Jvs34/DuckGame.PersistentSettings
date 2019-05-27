@@ -8,7 +8,7 @@ namespace PersistentSettings
 {
 	public class PersistentMatchOption
 	{
-		public int Value { get; set; }
+		public object Value { get; set; }
 
 	}
 }
