@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "LaunchSmartSteam": {
+      "commandName": "Executable",
+      "executablePath": "%OneDrive%\\Documents\\SSE\\SSELauncher.exe",
+      "commandLineArgs": "-appid 312530 -nointro"
+    },
+    "LaunchNormalSteam": {
+      "commandName": "Executable",
+      "executablePath": "E:\\Games\\Steam\\steamapps\\common\\Duck Game\\DuckGame.exe"
+    }
+  }
+}
