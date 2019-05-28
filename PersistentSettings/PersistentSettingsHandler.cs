@@ -171,11 +171,11 @@ namespace PersistentSettings
 	[HarmonyPatch( typeof( TeamSelect2 ) , nameof( TeamSelect2.DefaultSettings ) )]
 	internal static class OnResetSettings
 	{
-		//we need to at least let it run the first time
-		public static bool InsideDefaultSettings { get; set; }
 
-		//duck game wants to reset the settings everytime
-		//we honestly couldn't care less so we prevent this function from running
+		/// <summary>
+		/// We need to do this so we can just ignore duck game resetting all the values back to normal
+		/// </summary>
+		public static bool InsideDefaultSettings { get; set; }
 
 		private static void Prefix()
 		{
@@ -188,6 +188,7 @@ namespace PersistentSettings
 			InsideDefaultSettings = false;
 
 			PersistentSettingsMod.SettingsHandler?.ApplySettings();
+			PersistentSettingsMod.SettingsHandler?.SaveSettings();
 		}
 	}
 
