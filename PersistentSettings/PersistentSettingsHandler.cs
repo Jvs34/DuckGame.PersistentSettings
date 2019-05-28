@@ -45,8 +45,6 @@ namespace PersistentSettings
 
 			Configuration.Bind( Settings );
 
-			var modifiers = TeamSelect2Modifiers;
-
 			ApplySettings();
 		}
 
@@ -54,7 +52,7 @@ namespace PersistentSettings
 		/// <summary>
 		/// Applies our settings onto duck game's
 		/// </summary>
-		public void ApplySettings()
+		public void ApplySettings( bool canStartGame = false )
 		{
 			IEnumerable<MatchSetting> allSettings = TeamSelect2.matchSettings.Concat( TeamSelect2.onlineSettings );
 
@@ -66,7 +64,7 @@ namespace PersistentSettings
 				var foundMatchSetting = allSettings.FirstOrDefault( x => x.id == settingID );
 				if( foundMatchSetting != null )
 				{
-					foundMatchSetting.value = matchSetting.Value;
+					foundMatchSetting.value = matchSetting.GetValue();
 				}
 
 			}
@@ -83,9 +81,14 @@ namespace PersistentSettings
 			TeamSelect2.customLevels = Editor.activatedLevels.Count;
 			TeamSelect2.prevCustomLevels = Editor.activatedLevels.Count;
 
-			//TODO: start online lobby now depending on settings
-			if( Settings.StartOnline && Level.current is TeamSelect2 teamSelect2 )
+			if( canStartGame && Settings.StartOnline && Level.current is TeamSelect2 teamSelect2 )
 			{
+				var profileBox = teamSelect2.GetBox( 0 );
+				profileBox.profile.slotType = SlotType.Local;
+				profileBox.Update();
+				profileBox.OpenDoor();
+
+				TeamSelect2.FillMatchmakingProfiles();
 				DuckNetwork.Host( TeamSelect2.GetSettingInt( "maxplayers" ) , (NetworkLobbyType) TeamSelect2.GetSettingInt( "type" ) );
 				teamSelect2.PrepareForOnline();
 			}
@@ -97,9 +100,7 @@ namespace PersistentSettings
 		/// </summary>
 		public void BuildSettings()
 		{
-			IEnumerable<MatchSetting> allSettings = TeamSelect2.matchSettings.Concat( TeamSelect2.onlineSettings );
-
-			foreach( var matchSetting in allSettings )
+			foreach( var matchSetting in TeamSelect2.matchSettings.Concat( TeamSelect2.onlineSettings ) )
 			{
 				if( !Settings.MatchSettings.TryGetValue( matchSetting.id , out PersistentMatchOption matchOption ) )
 				{
@@ -107,7 +108,7 @@ namespace PersistentSettings
 					Settings.MatchSettings [matchSetting.id] = matchOption;
 				}
 
-				matchOption.Value = /*Convert.ToInt32*/( matchSetting.value );
+				matchOption.SetValue( matchSetting.value );
 			}
 
 
@@ -116,7 +117,8 @@ namespace PersistentSettings
 				Settings.Modifiers [modifierKV.Key] = modifierKV.Value;
 			}
 
-			Settings.Levels = Editor.activatedLevels;
+			Settings.Levels.Clear();
+			Settings.Levels.AddRange( Editor.activatedLevels );
 
 
 		}
@@ -145,10 +147,12 @@ namespace PersistentSettings
 				return;
 			}
 
-			if( !OnResetSettings.FirstRun )
+			//UpdateModifierStatus is called also inside DefaultSettings, so we want to avoid calling savesettings inside of it
+			if( OnResetSettings.InsideDefaultSettings )
 			{
 				return;
 			}
+
 
 			PersistentSettingsMod.SettingsHandler?.SaveSettings();
 		}
@@ -160,12 +164,7 @@ namespace PersistentSettings
 		private static void Postfix()
 		{
 			//only apply settings if we're the host in multiplayer
-			if( Network.isActive && Network.isClient )
-			{
-				return;
-			}
-
-			PersistentSettingsMod.SettingsHandler?.ApplySettings();
+			PersistentSettingsMod.SettingsHandler?.ApplySettings( true );
 		}
 	}
 
@@ -173,19 +172,22 @@ namespace PersistentSettings
 	internal static class OnResetSettings
 	{
 		//we need to at least let it run the first time
-		public static bool FirstRun { get; set; }
+		public static bool InsideDefaultSettings { get; set; }
 
 		//duck game wants to reset the settings everytime
 		//we honestly couldn't care less so we prevent this function from running
-		private static bool Prefix()
-		{
-			if( !FirstRun )
-			{
-				FirstRun = true;
-				return true;
-			}
 
-			return false;
+		private static void Prefix()
+		{
+			InsideDefaultSettings = true;
+		}
+
+
+		private static void Postfix()
+		{
+			InsideDefaultSettings = false;
+
+			PersistentSettingsMod.SettingsHandler?.ApplySettings();
 		}
 	}
 
