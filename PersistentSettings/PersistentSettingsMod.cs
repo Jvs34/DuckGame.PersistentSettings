@@ -30,20 +30,17 @@ namespace PersistentSettings
 		protected override void OnPreInitialize()
 		{
 			SettingsHandler = new PersistentSettingsHandler( configuration.directory );
-			HarmonyInstance.Create( "PersistentSettings" ).PatchAll( Assembly.GetExecutingAssembly() );
+			HarmonyInstance.Create( GetType().Namespace ).PatchAll( Assembly.GetExecutingAssembly() );
 		}
 
 		private Assembly ModResolve( object sender , ResolveEventArgs args )
 		{
+			string dllFolder = Path.GetFileNameWithoutExtension( GetType().Assembly.ManifestModule?.ScopeName ?? GetType().Namespace );
 			string cleanName = args.Name.Split( ',' ) [0];
 			//now try to load the requested assembly
 
-			string folder = "Release";
-#if DEBUG
-			folder = "Debug";
-#endif
-			//TODO: find a better way to output this stuff
-			string assemblyFolder = Path.Combine( configuration.directory , "PersistentSettings" , "bin" , "x86" , folder , "net471" );
+
+			string assemblyFolder = Path.Combine( configuration.directory , dllFolder , "Output" , "net471" );
 			string assemblyPath = Path.GetFullPath( Path.Combine( assemblyFolder , cleanName + ".dll" ) );
 
 			if( File.Exists( assemblyPath ) )

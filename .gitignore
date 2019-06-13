@@ -340,3 +340,4 @@ ASALocalRun/
 healthchecksdb
 ThirdParty/DuckGame.exe
 PersistentSettings.dll
+PersistentSettings/Output/
